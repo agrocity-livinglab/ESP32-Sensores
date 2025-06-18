@@ -32,8 +32,12 @@ void loop() {
   // Convert wind speed to km/h and mph
   float windSpeed_kmh = windSpeed_mps * mps_to_kmh;
   float windSpeed_mph = windSpeed_mps * mps_to_mph;
-
+  
+  float media_tensao =0.15*media_tensao + 0.85*voltage;
+  
   // Print wind speed
+  Serial.print("media tensão: ");
+  Serial.print(media_tensao);
   Serial.print("tensão: ");
   Serial.print(voltage);
   Serial.print(" Pino: ");
