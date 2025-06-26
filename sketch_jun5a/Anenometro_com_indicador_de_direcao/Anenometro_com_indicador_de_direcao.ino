@@ -1,7 +1,12 @@
 // Pin definitions
 # define Hall sensor 4         //  Pino digital 2
-
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 // Constants definitions
+const char* ssid= "redeADAMovel";
+const char* password="adatec40";
+const char* serverUrl = "http://192.168.64.183/devices/inputdatadevices/1";  
 int pin=34;
 float valor =0;
 int Winddir =0;
@@ -26,9 +31,44 @@ void setup()
   digitalWrite(4, HIGH);     //internall pull-up active
     
   //Start serial 
-  Serial.begin(9600);       // sets the serial port to 9600 baud
-  }
+  Serial.begin(115200);       // sets the serial port to 9600 baud
+  
+  WiFi.begin(ssid, password);
+   while (WiFi.status() != WL_CONNECTED) {
+  delay(500);
+  Serial.println("Connecting to WiFi..");
+ }
+ Serial.println("Connected to the WiFi network");
 
+
+  // Dados JSON que vamos enviar
+  //StaticJsonDocument<200> doc;
+  //doc["sensor"] = "umidade";
+  //doc["valor"] = 62.5;
+
+  //String jsonString;
+  //serializeJson(doc, jsonString);
+
+  // Envio POST
+  //HTTPClient http;
+  //http.begin(serverUrl);
+  //http.addHeader("Content-Type", "application/json");
+  
+  //int httpResponseCode = http.POST(jsonString);
+
+  //Serial.print("Código de resposta: ");
+  //Serial.println(httpResponseCode);
+
+  //if (httpResponseCode > 0) {
+    //String response = http.getString();
+    //Serial.println("Resposta:");
+    //Serial.println(response);
+  //}
+
+  //http.end();
+}
+
+ 
 void loop()
 {
   // Anemômetro
@@ -56,7 +96,48 @@ void loop()
   Serial.print(speedwind);
   Serial.print(" [km/h] ");  
   Serial.println();
+  counter = 0;  
 
+  StaticJsonDocument<300> innerDoc;
+  innerDoc["date_time"] = "2025-06-20T16:00:00"; // substitua por data dinâmica se quiser
+  innerDoc["status"] = 1;
+  innerDoc["data_type"] = "wind";
+  innerDoc["wind_speed_kmh"] = speedwind;
+  innerDoc["wind_direction_deg"] = Winddir;
+  innerDoc["wind_direction"] = direcao;
+
+  String innerJson;
+  serializeJson(innerDoc, innerJson);
+
+  // --- Criar JSON externo com payload ---
+  StaticJsonDocument<400> outerDoc;
+  outerDoc["payload"] = innerJson;
+
+  String postData;
+  serializeJson(outerDoc, postData);
+
+  // --- Enviar via POST para o servidor ---
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "application/json");
+
+    int httpCode = http.POST(postData);
+    Serial.print("Código de resposta: ");
+    Serial.println(httpCode);
+
+    if (httpCode > 0) {
+      String response = http.getString();
+      Serial.println("Resposta do servidor:");
+      Serial.println(response);
+    } else {
+      Serial.println("Falha no envio HTTP POST");
+    }
+
+    http.end();
+  } else {
+    Serial.println("WiFi desconectado.");
+  } 
 
   delay(delaytime);                        //delay between prints
 
@@ -105,7 +186,7 @@ direcao = "Norte";
  Serial.print(" / ");
  Serial.print(direcao);
  Serial.println("\n");
- delay (1000);
+//  delay (1000);
 }
 
 
@@ -114,8 +195,7 @@ void windvelocity(){
   speedwind = 0;
   windspeed = 0;
   
-  counter = 0;  
-  attachInterrupt(0, addcount, RISING);
+  attachInterrupt(4, addcount, RISING);
   unsigned long millis();       
   long startTime = millis();
   while(millis() < startTime + period) {
