@@ -10,6 +10,8 @@ const float mps_to_mph = 2.23694; // 1 m/s = 2.23694 mph
 
 void setup() {
   Serial.begin(9600);  
+  pinMode(34, INPUT_PULLUP);
+  
 }
 
 void loop() {
@@ -25,7 +27,7 @@ void loop() {
   } else if (voltage > maxVoltage) {
     // voltage = maxVoltage;
   }
-  
+  media_voltage = voltage*0.15 + media_voltage*0.85
   // Map the voltage to wind speed
   float windSpeed_mps = ((voltage - minVoltage) / (maxVoltage - minVoltage)) * maxWindSpeed;
 
@@ -34,10 +36,11 @@ void loop() {
   float windSpeed_mph = windSpeed_mps * mps_to_mph;
   
   float media_tensao =0.15*media_tensao + 0.85*voltage;
+
   
   // Print wind speed
   Serial.print("media tensão: ");
-  Serial.print(media_tensao);
+  Serial.print(media_voltage);
   Serial.print("tensão: ");
   Serial.print(voltage);
   Serial.print(" Pino: ");
